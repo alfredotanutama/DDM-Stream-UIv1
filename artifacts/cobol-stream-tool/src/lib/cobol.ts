@@ -16,6 +16,7 @@ export interface ParsedField {
   redefines: string | null; // name of the field/group this field redefines, if any
   indent: number; // 0 = top-level field, 1 = inside a REDEFINES sub-group (single level supported)
   start: number; // byte offset (0-indexed) within the generated/decomposed stream
+  isGroup: boolean; // true for a REDEFINES group header row (no PIC clause, not fillable) shown for display purposes only
 }
 
 interface RawLine {
@@ -167,8 +168,33 @@ export function parseCopybook(source: string): ParsedField[] {
     if (parsed.isGroup) {
       if (parsed.redefines) {
         const targetOffset = offsetsByName.get(parsed.redefines.toUpperCase());
+        const groupStart = targetOffset ?? cursor;
+
+        // Emit a non-fillable display-only row for the REDEFINES group header itself,
+        // so users can see it in the field table (with a "Redefines X" description)
+        // even though it carries no value/length of its own -- its children (indented
+        // beneath it) hold the actual overlapping fields.
+        fieldCounter += 1;
+        fields.push({
+          id: `f${fieldCounter}`,
+          level: parsed.level,
+          name: parsed.name,
+          isFiller: parsed.isFiller,
+          picRaw: "",
+          type: "X",
+          length: 0,
+          decimals: 0,
+          isComp3: false,
+          redefines: parsed.redefines,
+          indent: shadowLevel !== null ? 1 : 0,
+          start: groupStart,
+          isGroup: true,
+        });
+
+        offsetsByName.set(parsed.name.toUpperCase(), groupStart);
+
         shadowLevel = parsed.level;
-        shadowCursor = targetOffset ?? cursor;
+        shadowCursor = groupStart;
       }
       continue;
     }
@@ -210,6 +236,7 @@ export function parseCopybook(source: string): ParsedField[] {
       redefines: parsed.redefines,
       indent,
       start,
+      isGroup: false,
     });
   }
 

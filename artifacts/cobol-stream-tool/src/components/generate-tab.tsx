@@ -90,13 +90,16 @@ export function GenerateTab() {
                         <TableCell className="py-2 text-xs font-mono">
                           <div style={{ paddingLeft: `${f.indent * 16}px` }} className="flex flex-col">
                             <span>{f.name}</span>
-                            {f.redefines && <span className="text-[10px] text-muted-foreground">Redefines {f.redefines}</span>}
+                            {f.redefines && !f.isGroup && <span className="text-[10px] text-muted-foreground">Redefines {f.redefines}</span>}
                           </div>
                         </TableCell>
                         <TableCell className="py-2 text-xs font-mono text-muted-foreground">{f.picRaw || "GROUP"}</TableCell>
                         <TableCell className="py-2 text-xs font-mono text-muted-foreground">{f.length > 0 ? f.length : ""}</TableCell>
                         <TableCell className="py-2">
-                          {!f.isFiller && f.length > 0 && (
+                          {f.isGroup && f.redefines && (
+                            <span className="text-xs italic text-muted-foreground">Redefines {f.redefines}</span>
+                          )}
+                          {!f.isGroup && !f.isFiller && f.length > 0 && (
                             <Input
                               className="h-7 text-xs font-mono"
                               value={values[f.id] || ""}
@@ -104,7 +107,7 @@ export function GenerateTab() {
                               placeholder="..."
                             />
                           )}
-                          {f.isFiller && <span className="text-xs italic text-muted-foreground">Filler</span>}
+                          {!f.isGroup && f.isFiller && <span className="text-xs italic text-muted-foreground">Filler</span>}
                         </TableCell>
                       </TableRow>
                     ))}

@@ -100,13 +100,15 @@ export function DecomposeTab() {
                       <TableCell className="py-2 text-xs font-mono">
                         <div style={{ paddingLeft: `${r.indent * 16}px` }} className="flex flex-col">
                           <span>{r.name}</span>
-                          {r.redefines && <span className="text-[10px] text-muted-foreground">Redefines {r.redefines}</span>}
+                          {r.redefines && !r.isGroup && <span className="text-[10px] text-muted-foreground">Redefines {r.redefines}</span>}
                         </div>
                       </TableCell>
                       <TableCell className="py-2 text-xs font-mono text-muted-foreground">{r.picRaw || "GROUP"}</TableCell>
                       <TableCell className="py-2 text-xs font-mono text-muted-foreground">{r.length > 0 ? r.length : ""}</TableCell>
                       <TableCell className="py-2 text-xs font-mono">
-                        {r.isFiller ? (
+                        {r.isGroup && r.redefines ? (
+                          <span className="italic text-muted-foreground">Redefines {r.redefines}</span>
+                        ) : r.isFiller ? (
                           <span className="italic text-muted-foreground">Filler</span>
                         ) : r.length > 0 ? (
                           <div className="bg-muted/40 px-2 py-1 rounded inline-block max-w-full overflow-hidden text-ellipsis whitespace-nowrap" title={r.value}>
