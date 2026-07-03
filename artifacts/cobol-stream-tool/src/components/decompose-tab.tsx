@@ -53,6 +53,7 @@ export function DecomposeTab() {
               placeholder="01 CUSTOMER-RECORD.&#10;   05 CUSTOMER-ID   PIC X(10)."
               value={copybookSource}
               onChange={setCopybookSource}
+              showTypeLegend
             />
           </CardContent>
         </Card>

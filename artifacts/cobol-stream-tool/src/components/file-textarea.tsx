@@ -5,16 +5,25 @@ import { Upload, Clipboard } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
+const TYPE_LEGEND: { code: string; label: string }[] = [
+  { code: "9", label: "Numeric" },
+  { code: "A", label: "Alphabetic" },
+  { code: "X", label: "Alphanumeric" },
+  { code: "9V9", label: "Numeric w/ decimals" },
+];
+
 export function FileTextarea({
   value,
   onChange,
   placeholder,
-  label
+  label,
+  showTypeLegend = false,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder: string;
   label: string;
+  showTypeLegend?: boolean;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -91,6 +100,16 @@ export function FileTextarea({
         placeholder={placeholder}
         spellCheck={false}
       />
+      {showTypeLegend && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+          {TYPE_LEGEND.map(({ code, label }) => (
+            <span key={code} className="inline-flex items-center gap-1">
+              <span className="font-mono font-semibold text-foreground/70">{code}</span>
+              <span>{label}</span>
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -60,6 +60,7 @@ export function GenerateTab() {
               placeholder="01 CUSTOMER-RECORD.&#10;   05 CUSTOMER-ID   PIC X(10).&#10;   05 CUSTOMER-NAME PIC X(50)."
               value={copybookSource}
               onChange={setCopybookSource}
+              showTypeLegend
             />
           </CardContent>
         </Card>
