@@ -96,8 +96,8 @@ export function GenerateTab() {
                         <TableCell className="py-2 text-xs font-mono text-muted-foreground">{f.picRaw || "GROUP"}</TableCell>
                         <TableCell className="py-2 text-xs font-mono text-muted-foreground">{f.length > 0 ? f.length : ""}</TableCell>
                         <TableCell className="py-2">
-                          {f.isGroup && f.redefines && (
-                            <span className="text-xs italic text-muted-foreground">Redefines {f.redefines}</span>
+                          {f.isGroup && f.groupNote && (
+                            <span className="text-xs italic text-muted-foreground">{f.groupNote}</span>
                           )}
                           {!f.isGroup && !f.isFiller && f.length > 0 && (
                             <Input

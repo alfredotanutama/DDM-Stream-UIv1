@@ -16,7 +16,8 @@ export interface ParsedField {
   redefines: string | null; // name of the field/group this field redefines, if any
   indent: number; // 0 = top-level field, 1 = inside a REDEFINES sub-group (single level supported)
   start: number; // byte offset (0-indexed) within the generated/decomposed stream
-  isGroup: boolean; // true for a REDEFINES group header row (no PIC clause, not fillable) shown for display purposes only
+  isGroup: boolean; // true for a group header row (no PIC clause, not fillable) shown for display purposes only
+  groupNote: string | null; // display text shown in place of an input for a group header row, e.g. "Redefines X" or "Record Description"
 }
 
 interface RawLine {
@@ -189,12 +190,36 @@ export function parseCopybook(source: string): ParsedField[] {
           indent: shadowLevel !== null ? 1 : 0,
           start: groupStart,
           isGroup: true,
+          groupNote: `Redefines ${parsed.redefines}`,
         });
 
         offsetsByName.set(parsed.name.toUpperCase(), groupStart);
 
         shadowLevel = parsed.level;
         shadowCursor = groupStart;
+      } else if (parsed.level === 1) {
+        // Emit a non-fillable display-only row for the top-level (01) record name,
+        // labeled as the record description, so it's visible in the field table
+        // even though it carries no value/length of its own.
+        fieldCounter += 1;
+        fields.push({
+          id: `f${fieldCounter}`,
+          level: parsed.level,
+          name: parsed.name,
+          isFiller: parsed.isFiller,
+          picRaw: "",
+          type: "X",
+          length: 0,
+          decimals: 0,
+          isComp3: false,
+          redefines: null,
+          indent: 0,
+          start: cursor,
+          isGroup: true,
+          groupNote: "Record Description",
+        });
+
+        offsetsByName.set(parsed.name.toUpperCase(), cursor);
       }
       continue;
     }
@@ -237,6 +262,7 @@ export function parseCopybook(source: string): ParsedField[] {
       indent,
       start,
       isGroup: false,
+      groupNote: null,
     });
   }
 

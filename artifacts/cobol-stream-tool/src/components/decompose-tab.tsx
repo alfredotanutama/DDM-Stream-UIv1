@@ -106,8 +106,8 @@ export function DecomposeTab() {
                       <TableCell className="py-2 text-xs font-mono text-muted-foreground">{r.picRaw || "GROUP"}</TableCell>
                       <TableCell className="py-2 text-xs font-mono text-muted-foreground">{r.length > 0 ? r.length : ""}</TableCell>
                       <TableCell className="py-2 text-xs font-mono">
-                        {r.isGroup && r.redefines ? (
-                          <span className="italic text-muted-foreground">Redefines {r.redefines}</span>
+                        {r.isGroup && r.groupNote ? (
+                          <span className="italic text-muted-foreground">{r.groupNote}</span>
                         ) : r.isFiller ? (
                           <span className="italic text-muted-foreground">Filler</span>
                         ) : r.length > 0 ? (
