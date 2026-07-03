@@ -1,0 +1,1 @@
+- [DESIGN subagent CSS template literal bug](design-subagent-css-unit-bug.md) — watch for `${x}rem`/`px` unit typos in subagent-written inline styles; verify with a workflow restart + log check.
