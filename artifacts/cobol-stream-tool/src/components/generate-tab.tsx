@@ -103,8 +103,17 @@ export function GenerateTab() {
                             <Input
                               className="h-7 text-xs font-mono"
                               value={values[f.id] || ""}
-                              onChange={(e) => setValues(prev => ({ ...prev, [f.id]: e.target.value }))}
-                              placeholder="..."
+                              onChange={(e) => {
+                                let next = e.target.value;
+                                if (f.kind === "NUMERIC") {
+                                  next = next.replace(/[^0-9]/g, "");
+                                } else if (f.kind === "DECIMAL") {
+                                  next = next.replace(/[^0-9.]/g, "");
+                                }
+                                setValues(prev => ({ ...prev, [f.id]: next }));
+                              }}
+                              inputMode={f.kind === "NUMERIC" ? "numeric" : f.kind === "DECIMAL" ? "decimal" : "text"}
+                              placeholder={f.kind === "DECIMAL" ? "e.g. 123.45" : "..."}
                             />
                           )}
                           {!f.isGroup && f.isFiller && <span className="text-xs italic text-muted-foreground">Filler</span>}

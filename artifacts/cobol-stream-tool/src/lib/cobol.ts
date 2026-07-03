@@ -3,6 +3,9 @@
 
 export type PicType = "X" | "9";
 
+/** High-level semantic category of a field, used to drive input formatting/assistance in the UI. */
+export type FieldKind = "ALPHA" | "NUMERIC" | "DECIMAL" | "GROUP";
+
 export interface ParsedField {
   id: string; // stable unique id for React keys / value maps (not necessarily the COBOL name, since names can repeat)
   level: number;
@@ -18,6 +21,7 @@ export interface ParsedField {
   start: number; // byte offset (0-indexed) within the generated/decomposed stream
   isGroup: boolean; // true for a group header row (no PIC clause, not fillable) shown for display purposes only
   groupNote: string | null; // display text shown in place of an input for a group header row, e.g. "Redefines X" or "Record Description"
+  kind: FieldKind; // semantic category (ALPHA/NUMERIC/DECIMAL/GROUP) used to drive input formatting/assistance in the UI
 }
 
 interface RawLine {
@@ -190,6 +194,7 @@ export function parseCopybook(source: string): ParsedField[] {
           indent: shadowLevel !== null ? 1 : 0,
           start: groupStart,
           isGroup: true,
+          kind: "GROUP",
           groupNote: `Redefines ${parsed.redefines}`,
         });
 
@@ -197,10 +202,11 @@ export function parseCopybook(source: string): ParsedField[] {
 
         shadowLevel = parsed.level;
         shadowCursor = groupStart;
-      } else if (parsed.level === 1) {
-        // Emit a non-fillable display-only row for the top-level (01) record name,
-        // labeled as the record description, so it's visible in the field table
-        // even though it carries no value/length of its own.
+      } else {
+        // Emit a non-fillable display-only row for the group header itself (whether it's
+        // the top-level 01 record or a nested structural group like "05 PAYMENT-DETAILS."),
+        // so users can see the record/group structure even though the row carries no
+        // value/length of its own -- its children accumulate the actual byte length below it.
         fieldCounter += 1;
         fields.push({
           id: `f${fieldCounter}`,
@@ -213,13 +219,14 @@ export function parseCopybook(source: string): ParsedField[] {
           decimals: 0,
           isComp3: false,
           redefines: null,
-          indent: 0,
-          start: cursor,
+          indent: shadowLevel !== null ? 1 : 0,
+          start: shadowLevel !== null ? shadowCursor : cursor,
           isGroup: true,
-          groupNote: "Record Description",
+          kind: "GROUP",
+          groupNote: parsed.level === 1 ? "Record Description" : null,
         });
 
-        offsetsByName.set(parsed.name.toUpperCase(), cursor);
+        offsetsByName.set(parsed.name.toUpperCase(), shadowLevel !== null ? shadowCursor : cursor);
       }
       continue;
     }
@@ -262,6 +269,7 @@ export function parseCopybook(source: string): ParsedField[] {
       indent,
       start,
       isGroup: false,
+      kind: parsed.type === "X" ? "ALPHA" : parsed.decimals > 0 ? "DECIMAL" : "NUMERIC",
       groupNote: null,
     });
   }
