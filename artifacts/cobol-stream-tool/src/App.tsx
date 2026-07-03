@@ -19,7 +19,7 @@ function App() {
               <div className="container mx-auto px-4 h-14 flex items-center justify-between max-w-6xl">
                 <div className="flex items-center gap-3">
                   <div className="w-7 h-7 bg-primary rounded shadow-sm flex items-center justify-center font-mono text-primary-foreground text-sm font-bold border border-primary/20">C</div>
-                  <h1 className="font-semibold tracking-tight text-sm">COBOL Stream Tool</h1>
+                  <h1 className="font-semibold tracking-tight text-sm">DDM Stream</h1>
                 </div>
                 <ThemeToggle />
               </div>
