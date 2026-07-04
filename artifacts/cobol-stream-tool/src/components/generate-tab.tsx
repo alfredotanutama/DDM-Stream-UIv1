@@ -90,6 +90,7 @@ export function GenerateTab({
               value={copybookSource}
               onChange={setCopybookSource}
               showTypeLegend
+              showCopyButton
               lengthBadge={fields.length > 0 ? `Total: ${recordLength} bytes` : undefined}
             />
           </CardContent>

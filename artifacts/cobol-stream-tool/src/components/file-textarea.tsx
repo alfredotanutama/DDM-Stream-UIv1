@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Upload, Clipboard } from "lucide-react";
+import { Upload, Clipboard, Copy } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
@@ -18,6 +18,7 @@ export function FileTextarea({
   placeholder,
   label,
   showTypeLegend = false,
+  showCopyButton = false,
   lengthBadge,
   lengthBadgeVariant = "default",
 }: {
@@ -26,11 +27,26 @@ export function FileTextarea({
   placeholder: string;
   label: string;
   showTypeLegend?: boolean;
+  showCopyButton?: boolean;
   lengthBadge?: string;
   lengthBadgeVariant?: "default" | "warning";
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  const handleCopy = async () => {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      toast({ title: "Copied to clipboard" });
+    } catch (e) {
+      toast({
+        title: "Couldn't copy to clipboard",
+        description: "Your browser may be blocking clipboard access.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -84,6 +100,18 @@ export function FileTextarea({
           )}
         </div>
         <div className="flex items-center gap-2">
+          {showCopyButton && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={handleCopy}
+              disabled={!value}
+            >
+              <Copy className="w-3 h-3 mr-1.5" />
+              Copy
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"

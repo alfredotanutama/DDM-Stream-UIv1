@@ -4,7 +4,7 @@ import { FileTextarea } from "./file-textarea";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Trash2 } from "lucide-react";
+import { Copy, Trash2, ArrowRightCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 export function DecomposeTab({
@@ -12,11 +12,13 @@ export function DecomposeTab({
   setCopybookSource,
   streamSource,
   setStreamSource,
+  onSendToGenerate,
 }: {
   copybookSource: string;
   setCopybookSource: (v: string) => void;
   streamSource: string;
   setStreamSource: (v: string) => void;
+  onSendToGenerate: (fieldName: string, value: string) => void;
 }) {
   const { toast } = useToast();
 
@@ -83,6 +85,7 @@ export function DecomposeTab({
               value={copybookSource}
               onChange={setCopybookSource}
               showTypeLegend
+              showCopyButton
               lengthBadge={fields.length > 0 ? `Total: ${recordLength} bytes` : undefined}
             />
           </CardContent>
@@ -126,10 +129,11 @@ export function DecomposeTab({
               <Table>
                 <TableHeader className="bg-muted/50">
                   <TableRow>
-                    <TableHead className="w-[35%] text-xs">Field</TableHead>
-                    <TableHead className="w-[20%] text-xs">Type</TableHead>
+                    <TableHead className="w-[30%] text-xs">Field</TableHead>
+                    <TableHead className="w-[15%] text-xs">Type</TableHead>
                     <TableHead className="w-[10%] text-xs">Len</TableHead>
-                    <TableHead className="w-[35%] text-xs">Value</TableHead>
+                    <TableHead className="w-[30%] text-xs">Value</TableHead>
+                    <TableHead className="w-[15%] text-xs"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -153,6 +157,20 @@ export function DecomposeTab({
                             {r.value || <span className="opacity-0">.</span>}
                           </div>
                         ) : null}
+                      </TableCell>
+                      <TableCell className="py-2 text-xs">
+                        {!r.isGroup && !r.isFiller && r.length > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-[11px] px-2"
+                            title="Send this value to the matching field in the Generate tab"
+                            onClick={() => onSendToGenerate(r.name, r.value)}
+                          >
+                            <ArrowRightCircle className="w-3 h-3 mr-1" />
+                            To Generate
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

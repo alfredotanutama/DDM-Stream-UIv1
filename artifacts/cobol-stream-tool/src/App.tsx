@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,14 +7,41 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GenerateTab } from "@/components/generate-tab";
 import { DecomposeTab } from "@/components/decompose-tab";
+import { parseCopybook } from "@/lib/cobol";
+import { useToast } from "@/hooks/use-toast";
 
 const queryClient = new QueryClient();
 
 function App() {
+  const [activeTab, setActiveTab] = useState("generate");
   const [generateCopybook, setGenerateCopybook] = useState("");
   const [generateValues, setGenerateValues] = useState<Record<string, string>>({});
   const [decomposeCopybook, setDecomposeCopybook] = useState("");
   const [decomposeStream, setDecomposeStream] = useState("");
+  const { toast } = useToast();
+
+  const generateFields = useMemo(() => {
+    try {
+      return parseCopybook(generateCopybook);
+    } catch (e) {
+      return [];
+    }
+  }, [generateCopybook]);
+
+  const handleSendToGenerate = (fieldName: string, value: string) => {
+    const match = generateFields.find((f) => f.name === fieldName && !f.isGroup);
+    if (!match) {
+      toast({
+        title: "No matching field",
+        description: `"${fieldName}" wasn't found in the Generate tab's copybook.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    setGenerateValues((prev) => ({ ...prev, [match.id]: value }));
+    setActiveTab("generate");
+    toast({ title: "Sent to Generate", description: `${fieldName} value copied over.` });
+  };
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -31,7 +58,7 @@ function App() {
               </div>
             </header>
             <main className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
-              <Tabs defaultValue="generate" className="w-full">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-2 max-w-[400px] mb-8">
                   <TabsTrigger value="generate">Generate</TabsTrigger>
                   <TabsTrigger value="decompose">Decompose</TabsTrigger>
@@ -50,6 +77,7 @@ function App() {
                     setCopybookSource={setDecomposeCopybook}
                     streamSource={decomposeStream}
                     setStreamSource={setDecomposeStream}
+                    onSendToGenerate={handleSendToGenerate}
                   />
                 </TabsContent>
               </Tabs>
