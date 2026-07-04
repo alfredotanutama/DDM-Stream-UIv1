@@ -1,2 +1,3 @@
 - [DESIGN subagent CSS template literal bug](design-subagent-css-unit-bug.md) — watch for `${x}rem`/`px` unit typos in subagent-written inline styles; verify with a workflow restart + log check.
 - [COBOL copybook parser: group/REDEFINES rendering](cobol-copybook-group-rendering.md) — group header rows carry length 0 and reuse the cursor of their first child; keep REDEFINES nesting single-level only.
+- [Radix Tabs unmount loses child state](radix-tabs-state-persistence.md) — lift state to a shared parent if tab content must persist across switches; don't rely on Radix `TabsContent` local state.

@@ -1,16 +1,24 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { parseCopybook, generateStream, getRecordLength } from "@/lib/cobol";
 import { FileTextarea } from "./file-textarea";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Download, RefreshCw } from "lucide-react";
+import { Copy, Download, Trash2, RefreshCw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
-export function GenerateTab() {
-  const [copybookSource, setCopybookSource] = useState("");
-  const [values, setValues] = useState<Record<string, string>>({});
+export function GenerateTab({
+  copybookSource,
+  setCopybookSource,
+  values,
+  setValues,
+}: {
+  copybookSource: string;
+  setCopybookSource: (v: string) => void;
+  values: Record<string, string>;
+  setValues: (v: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)) => void;
+}) {
   const { toast } = useToast();
 
   const fields = useMemo(() => {
@@ -52,9 +60,28 @@ export function GenerateTab() {
 
   const clearValues = () => setValues({});
 
+  const clearAll = () => {
+    setCopybookSource("");
+    setValues({});
+    toast({ title: "Cleared", description: "Generate tab data has been reset." });
+  };
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-      <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={clearAll}
+          className="h-7 text-xs"
+          disabled={!copybookSource.trim() && Object.keys(values).length === 0}
+        >
+          <Trash2 className="w-3 h-3 mr-1.5" />
+          Clear Tab
+        </Button>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <div className="flex flex-col gap-6">
         <Card>
           <CardContent className="pt-6">
             <FileTextarea
@@ -168,6 +195,7 @@ export function GenerateTab() {
             </div>
           </CardContent>
         </Card>
+      </div>
       </div>
     </div>
   );

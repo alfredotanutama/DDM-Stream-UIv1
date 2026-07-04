@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,6 +11,11 @@ import { DecomposeTab } from "@/components/decompose-tab";
 const queryClient = new QueryClient();
 
 function App() {
+  const [generateCopybook, setGenerateCopybook] = useState("");
+  const [generateValues, setGenerateValues] = useState<Record<string, string>>({});
+  const [decomposeCopybook, setDecomposeCopybook] = useState("");
+  const [decomposeStream, setDecomposeStream] = useState("");
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light">
@@ -31,10 +37,20 @@ function App() {
                   <TabsTrigger value="decompose">Decompose</TabsTrigger>
                 </TabsList>
                 <TabsContent value="generate" className="focus-visible:outline-none">
-                  <GenerateTab />
+                  <GenerateTab
+                    copybookSource={generateCopybook}
+                    setCopybookSource={setGenerateCopybook}
+                    values={generateValues}
+                    setValues={setGenerateValues}
+                  />
                 </TabsContent>
                 <TabsContent value="decompose" className="focus-visible:outline-none">
-                  <DecomposeTab />
+                  <DecomposeTab
+                    copybookSource={decomposeCopybook}
+                    setCopybookSource={setDecomposeCopybook}
+                    streamSource={decomposeStream}
+                    setStreamSource={setDecomposeStream}
+                  />
                 </TabsContent>
               </Tabs>
             </main>

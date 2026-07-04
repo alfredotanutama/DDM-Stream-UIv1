@@ -1,15 +1,23 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { parseCopybook, decomposeStream, getRecordLength } from "@/lib/cobol";
 import { FileTextarea } from "./file-textarea";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Copy } from "lucide-react";
+import { Copy, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
-export function DecomposeTab() {
-  const [copybookSource, setCopybookSource] = useState("");
-  const [streamSource, setStreamSource] = useState("");
+export function DecomposeTab({
+  copybookSource,
+  setCopybookSource,
+  streamSource,
+  setStreamSource,
+}: {
+  copybookSource: string;
+  setCopybookSource: (v: string) => void;
+  streamSource: string;
+  setStreamSource: (v: string) => void;
+}) {
   const { toast } = useToast();
 
   const fields = useMemo(() => {
@@ -46,8 +54,26 @@ export function DecomposeTab() {
     toast({ title: "Copied to clipboard", description: "The decomposition results have been copied." });
   };
 
+  const clearAll = () => {
+    setCopybookSource("");
+    setStreamSource("");
+    toast({ title: "Cleared", description: "Decompose tab data has been reset." });
+  };
+
   return (
     <div className="flex flex-col gap-6">
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={clearAll}
+          className="h-7 text-xs"
+          disabled={!copybookSource.trim() && !streamSource.trim()}
+        >
+          <Trash2 className="w-3 h-3 mr-1.5" />
+          Clear Tab
+        </Button>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardContent className="pt-6">
