@@ -1,10 +1,10 @@
 // COBOL Copybook parsing / stream generation / stream decomposition engine.
 // Pure functions only — no React, no side effects. Safe to import from any component.
 
-export type PicType = "X" | "9";
+export type PicType = "X" | "9" | "S9";
 
 /** High-level semantic category of a field, used to drive input formatting/assistance in the UI. */
-export type FieldKind = "ALPHA" | "NUMERIC" | "DECIMAL" | "GROUP";
+export type FieldKind = "ALPHA" | "NUMERIC" | "DECIMAL" | "SIGNED" | "SIGNED_DEC" | "GROUP";
 
 export interface ParsedField {
   id: string; // stable unique id for React keys / value maps (not necessarily the COBOL name, since names can repeat)
@@ -21,7 +21,97 @@ export interface ParsedField {
   start: number; // byte offset (0-indexed) within the generated/decomposed stream
   isGroup: boolean; // true for a group header row (no PIC clause, not fillable) shown for display purposes only
   groupNote: string | null; // display text shown in place of an input for a group header row, e.g. "Redefines X" or "Record Description"
-  kind: FieldKind; // semantic category (ALPHA/NUMERIC/DECIMAL/GROUP) used to drive input formatting/assistance in the UI
+  kind: FieldKind; // semantic category (ALPHA/NUMERIC/DECIMAL/SIGNED/SIGNED_DEC/GROUP) used to drive input formatting/assistance in the UI
+}
+
+// === Overpunch (signed numeric, PIC S9) encode/decode tables ===
+// COBOL DISPLAY-format signed fields encode the sign into the last character
+// of the field by replacing the final digit with a special "overpunch" character.
+const OVERPUNCH_DECODE: Record<string, { digit: string; sign: "+" | "-" }> = {
+  "{": { digit: "0", sign: "+" }, "}": { digit: "0", sign: "-" },
+  A: { digit: "1", sign: "+" }, J: { digit: "1", sign: "-" },
+  B: { digit: "2", sign: "+" }, K: { digit: "2", sign: "-" },
+  C: { digit: "3", sign: "+" }, L: { digit: "3", sign: "-" },
+  D: { digit: "4", sign: "+" }, M: { digit: "4", sign: "-" },
+  E: { digit: "5", sign: "+" }, N: { digit: "5", sign: "-" },
+  F: { digit: "6", sign: "+" }, O: { digit: "6", sign: "-" },
+  G: { digit: "7", sign: "+" }, P: { digit: "7", sign: "-" },
+  H: { digit: "8", sign: "+" }, Q: { digit: "8", sign: "-" },
+  I: { digit: "9", sign: "+" }, R: { digit: "9", sign: "-" },
+};
+
+const OVERPUNCH_POS: Record<string, string> = {
+  "0": "{", "1": "A", "2": "B", "3": "C", "4": "D",
+  "5": "E", "6": "F", "7": "G", "8": "H", "9": "I",
+};
+const OVERPUNCH_NEG: Record<string, string> = {
+  "0": "}", "1": "J", "2": "K", "3": "L", "4": "M",
+  "5": "N", "6": "O", "7": "P", "8": "Q", "9": "R",
+};
+
+/** Result of decoding a signed-numeric (PIC S9) raw segment. */
+export interface SignedDecodeResult {
+  display: string; // formatted display value, e.g. "10001.00" or "-10001.00"
+  warning: string | null; // non-null when the last char wasn't a recognized overpunch character
+}
+
+/**
+ * Decodes a raw fixed-width segment for a PIC S9(n) / S9(n)V9(m) field.
+ * The sign is overpunched onto the LAST character of the entire field
+ * (not the last digit of the integer part).
+ */
+export function decodeSignedNumeric(raw: string, intDigits: number, decDigits = 0): SignedDecodeResult {
+  if (!raw) {
+    return { display: decDigits > 0 ? `0.${"0".repeat(decDigits)}` : "0", warning: null };
+  }
+
+  const lastChar = raw[raw.length - 1];
+  const decoded = OVERPUNCH_DECODE[lastChar.toUpperCase()];
+
+  let digits: string;
+  let sign: "+" | "-";
+  let warning: string | null = null;
+
+  if (decoded) {
+    digits = raw.slice(0, -1) + decoded.digit;
+    sign = decoded.sign;
+  } else {
+    // Last char is a regular digit (or unrecognized) -- assume positive, warn.
+    digits = raw;
+    sign = "+";
+    warning = "Non-standard encoding, assumed positive";
+  }
+
+  digits = digits.replace(/[^0-9]/g, "").padStart(intDigits + decDigits, "0");
+
+  const intPart = digits.slice(0, intDigits).replace(/^0+(?=\d)/, "") || "0";
+  const display =
+    decDigits === 0
+      ? `${sign === "-" ? "-" : ""}${intPart}`
+      : `${sign === "-" ? "-" : ""}${intPart}.${digits.slice(intDigits)}`;
+
+  return { display, warning };
+}
+
+/**
+ * Encodes a user-entered decimal string into a fixed-width overpunched segment
+ * for a PIC S9(n) / S9(n)V9(m) field.
+ */
+export function encodeSignedNumeric(value: string, intDigits: number, decDigits = 0): string {
+  const cleaned = (value ?? "").trim();
+  const isNegative = cleaned.startsWith("-");
+  const absValue = cleaned.replace(/^-/, "").replace(/[^0-9.]/g, "");
+  const [intPartRaw, decPartRaw = ""] = absValue.split(".");
+
+  const intDigitsOnly = (intPartRaw || "0").replace(/[^0-9]/g, "") || "0";
+  const paddedInt = intDigitsOnly.slice(-intDigits).padStart(intDigits, "0");
+  const paddedDec = decPartRaw.replace(/[^0-9]/g, "").slice(0, decDigits).padEnd(decDigits, "0");
+  const combined = paddedInt + paddedDec;
+
+  const lastDigit = combined[combined.length - 1] ?? "0";
+  const overpunch = isNegative ? OVERPUNCH_NEG[lastDigit] : OVERPUNCH_POS[lastDigit];
+
+  return combined.slice(0, -1) + overpunch;
 }
 
 interface RawLine {
@@ -60,6 +150,9 @@ function stripPrefixAndComments(line: string): string | null {
 }
 
 function parsePicture(pic: string): { type: PicType; length: number; decimals: number } {
+  const isSigned = /^\s*S/i.test(pic);
+  const body = isSigned ? pic.replace(/^\s*S/i, "") : pic;
+
   let length = 0;
   let decimals = 0;
   let type: PicType = "X";
@@ -68,7 +161,7 @@ function parsePicture(pic: string): { type: PicType; length: number; decimals: n
 
   const re = /([9XV])(\((\d+)\))?/gi;
   let m: RegExpExecArray | null;
-  while ((m = re.exec(pic)) !== null) {
+  while ((m = re.exec(body)) !== null) {
     const ch = m[1].toUpperCase();
     const count = m[3] ? parseInt(m[3], 10) : 1;
 
@@ -84,6 +177,10 @@ function parsePicture(pic: string): { type: PicType; length: number; decimals: n
 
     length += count;
     if (afterV) decimals += count;
+  }
+
+  if (isSigned && type === "9") {
+    type = "S9";
   }
 
   return { type, length, decimals };
@@ -107,7 +204,7 @@ function parseLine(line: string): RawLine | null {
   const redefinesMatch = afterLevel.match(/REDEFINES\s+([A-Za-z0-9\-]+)/i);
   const redefines = redefinesMatch ? redefinesMatch[1] : null;
 
-  const picMatch = afterLevel.match(/PIC(?:TURE)?\s+([X9V()0-9]+)/i);
+  const picMatch = afterLevel.match(/PIC(?:TURE)?\s+([SX9V()0-9]+)/i);
   const isComp3 = /COMP-3|COMPUTATIONAL-3/i.test(afterLevel);
 
   if (!picMatch) {
@@ -269,7 +366,16 @@ export function parseCopybook(source: string): ParsedField[] {
       indent,
       start,
       isGroup: false,
-      kind: parsed.type === "X" ? "ALPHA" : parsed.decimals > 0 ? "DECIMAL" : "NUMERIC",
+      kind:
+        parsed.type === "X"
+          ? "ALPHA"
+          : parsed.type === "S9"
+          ? parsed.decimals > 0
+            ? "SIGNED_DEC"
+            : "SIGNED"
+          : parsed.decimals > 0
+          ? "DECIMAL"
+          : "NUMERIC",
       groupNote: null,
     });
   }
@@ -280,6 +386,11 @@ export function parseCopybook(source: string): ParsedField[] {
 /** Formats a single field's user-entered value into its fixed-width stream representation. */
 export function formatFieldValue(field: ParsedField, rawValue: string): string {
   const value = rawValue ?? "";
+
+  if (field.type === "S9") {
+    const intLen = field.length - field.decimals;
+    return encodeSignedNumeric(value, intLen, field.decimals);
+  }
 
   if (field.type === "9") {
     if (field.decimals > 0) {
@@ -336,6 +447,11 @@ export function extractFieldRaw(field: ParsedField, stream: string): string {
 
 /** Converts a field's raw fixed-width substring into its display value (trimmed / decimal-formatted). */
 export function displayFieldValue(field: ParsedField, raw: string): string {
+  if (field.type === "S9") {
+    const intLen = field.length - field.decimals;
+    return decodeSignedNumeric(raw, intLen, field.decimals).display;
+  }
+
   if (field.type === "9") {
     if (field.decimals > 0) {
       const intLen = field.length - field.decimals;
@@ -354,16 +470,41 @@ export function displayFieldValue(field: ParsedField, raw: string): string {
 export interface DecomposedField extends ParsedField {
   raw: string;
   value: string;
+  warning: string | null; // non-null when this field's decoding is questionable (non-standard sign, truncated stream, etc.)
 }
 
 /** Decomposes a stream into field values, given a parsed copybook. */
 export function decomposeStream(fields: ParsedField[], stream: string): DecomposedField[] {
   return fields.map((field) => {
+    if (field.isGroup) {
+      return { ...field, raw: "", value: "", warning: null };
+    }
+
+    const available = stream.length - field.start;
+    let warning: string | null = null;
+
+    if (available < field.length) {
+      warning = `Stream too short for field ${field.name}`;
+    } else if (field.type === "X" && field.isFiller && stream.slice(field.start, field.start + field.length).startsWith(" ")) {
+      // FILLER (PIC X) fields with a leading space are a common symptom of an
+      // upstream stream that's a different length than this copybook expects.
+      if (stream.length !== getRecordLength(fields)) {
+        warning = `Stream length mismatch. Expected ${getRecordLength(fields)} chars, got ${stream.length}. Check for hidden leading spaces.`;
+      }
+    }
+
     const raw = extractFieldRaw(field, stream);
-    return {
-      ...field,
-      raw,
-      value: displayFieldValue(field, raw),
-    };
+    let value: string;
+
+    if (field.type === "S9") {
+      const intLen = field.length - field.decimals;
+      const decoded = decodeSignedNumeric(raw, intLen, field.decimals);
+      value = decoded.display;
+      if (decoded.warning && !warning) warning = decoded.warning;
+    } else {
+      value = displayFieldValue(field, raw);
+    }
+
+    return { ...field, raw, value, warning };
   });
 }

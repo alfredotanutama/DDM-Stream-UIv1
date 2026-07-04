@@ -141,11 +141,25 @@ export function GenerateTab({
                                   next = next.replace(/[^0-9]/g, "");
                                 } else if (f.kind === "DECIMAL") {
                                   next = next.replace(/[^0-9.]/g, "");
+                                } else if (f.kind === "SIGNED" || f.kind === "SIGNED_DEC") {
+                                  next = next.replace(/[^0-9.\-]/g, "");
                                 }
                                 setValues(prev => ({ ...prev, [f.id]: next }));
                               }}
-                              inputMode={f.kind === "NUMERIC" ? "numeric" : f.kind === "DECIMAL" ? "decimal" : "text"}
-                              placeholder={f.kind === "DECIMAL" ? "e.g. 123.45" : "..."}
+                              inputMode={
+                                f.kind === "NUMERIC"
+                                  ? "numeric"
+                                  : f.kind === "DECIMAL" || f.kind === "SIGNED" || f.kind === "SIGNED_DEC"
+                                  ? "decimal"
+                                  : "text"
+                              }
+                              placeholder={
+                                f.kind === "DECIMAL"
+                                  ? "e.g. 123.45"
+                                  : f.kind === "SIGNED" || f.kind === "SIGNED_DEC"
+                                  ? "e.g. 10001.00 or -10001.00"
+                                  : "..."
+                              }
                             />
                           )}
                           {!f.isGroup && f.isFiller && <span className="text-xs italic text-muted-foreground">Filler</span>}

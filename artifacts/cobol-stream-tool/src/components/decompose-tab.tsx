@@ -47,11 +47,11 @@ export function DecomposeTab({
   const handleCopyResult = async () => {
     if (!results.length) return;
     
-    const textLines = ["Field\tType\tLength\tValue"];
+    const textLines = ["Field\tType\tLength\tRaw Segment\tValue"];
     results.forEach(r => {
       if (r.length === 0) return; // skip purely structural groups if any
       const indentStr = "  ".repeat(r.indent);
-      textLines.push(`${indentStr}${r.name}\t${r.picRaw}\t${r.length}\t${r.value}`);
+      textLines.push(`${indentStr}${r.name}\t${r.picRaw}\t${r.length}\t${r.raw}\t${r.value}`);
     });
 
     await navigator.clipboard.writeText(textLines.join("\n"));
@@ -152,11 +152,12 @@ export function DecomposeTab({
               <Table>
                 <TableHeader className="bg-muted/50">
                   <TableRow>
-                    <TableHead className="w-[30%] text-xs">Field</TableHead>
-                    <TableHead className="w-[15%] text-xs">Type</TableHead>
-                    <TableHead className="w-[10%] text-xs">Len</TableHead>
-                    <TableHead className="w-[30%] text-xs">Value</TableHead>
-                    <TableHead className="w-[15%] text-xs"></TableHead>
+                    <TableHead className="w-[22%] text-xs">Field</TableHead>
+                    <TableHead className="w-[13%] text-xs">Type</TableHead>
+                    <TableHead className="w-[7%] text-xs">Len</TableHead>
+                    <TableHead className="w-[20%] text-xs">Raw Segment</TableHead>
+                    <TableHead className="w-[20%] text-xs">Value</TableHead>
+                    <TableHead className="w-[18%] text-xs"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -170,14 +171,26 @@ export function DecomposeTab({
                       </TableCell>
                       <TableCell className="py-2 text-xs font-mono text-muted-foreground">{r.picRaw || "GROUP"}</TableCell>
                       <TableCell className="py-2 text-xs font-mono text-muted-foreground">{r.length > 0 ? r.length : ""}</TableCell>
+                      <TableCell className="py-2 text-xs font-mono text-muted-foreground">
+                        {!r.isGroup && r.length > 0 ? (
+                          <span title={r.raw}>{r.raw}</span>
+                        ) : null}
+                      </TableCell>
                       <TableCell className="py-2 text-xs font-mono">
                         {r.isGroup && r.groupNote ? (
                           <span className="italic text-muted-foreground">{r.groupNote}</span>
                         ) : r.isFiller ? (
                           <span className="italic text-muted-foreground">Filler</span>
                         ) : r.length > 0 ? (
-                          <div className="bg-muted/40 px-2 py-1 rounded inline-block max-w-full overflow-hidden text-ellipsis whitespace-nowrap" title={r.value}>
-                            {r.value || <span className="opacity-0">.</span>}
+                          <div className="flex flex-col gap-1">
+                            <div className="bg-muted/40 px-2 py-1 rounded inline-block max-w-full overflow-hidden text-ellipsis whitespace-nowrap" title={r.value}>
+                              {r.value || <span className="opacity-0">.</span>}
+                            </div>
+                            {r.warning && (
+                              <span className="text-[10px] font-sans text-amber-600 dark:text-amber-500" title={r.warning}>
+                                ⚠️ {r.warning}
+                              </span>
+                            )}
                           </div>
                         ) : null}
                       </TableCell>
