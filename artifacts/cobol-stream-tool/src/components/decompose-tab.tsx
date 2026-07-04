@@ -4,7 +4,7 @@ import { FileTextarea } from "./file-textarea";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Trash2, ArrowRightCircle } from "lucide-react";
+import { Copy, Trash2, ArrowRightCircle, SendToBack } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 export function DecomposeTab({
@@ -13,12 +13,14 @@ export function DecomposeTab({
   streamSource,
   setStreamSource,
   onSendToGenerate,
+  onContinueInGenerate,
 }: {
   copybookSource: string;
   setCopybookSource: (v: string) => void;
   streamSource: string;
   setStreamSource: (v: string) => void;
   onSendToGenerate: (fieldName: string, value: string) => void;
+  onContinueInGenerate: (copybookText: string, valuesByName: Record<string, string>) => void;
 }) {
   const { toast } = useToast();
 
@@ -60,6 +62,15 @@ export function DecomposeTab({
     setCopybookSource("");
     setStreamSource("");
     toast({ title: "Cleared", description: "Decompose tab data has been reset." });
+  };
+
+  const handleContinue = () => {
+    const valuesByName: Record<string, string> = {};
+    for (const r of results) {
+      if (r.isGroup || r.isFiller || r.length === 0) continue;
+      valuesByName[r.name] = r.value;
+    }
+    onContinueInGenerate(copybookSource, valuesByName);
   };
 
   return (
@@ -120,10 +131,22 @@ export function DecomposeTab({
           <CardContent className="pt-6 flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold">Decomposed Fields</h3>
-              <Button variant="outline" size="sm" onClick={handleCopyResult} className="h-7 text-xs">
-                <Copy className="w-3 h-3 mr-1.5" />
-                Copy Result
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleContinue}
+                  className="h-7 text-xs"
+                  title="Carry this copybook and its field values over to the Generate tab for further editing"
+                >
+                  <SendToBack className="w-3 h-3 mr-1.5" />
+                  Continue in Generate
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleCopyResult} className="h-7 text-xs">
+                  <Copy className="w-3 h-3 mr-1.5" />
+                  Copy Result
+                </Button>
+              </div>
             </div>
             <div className="rounded-md border overflow-hidden">
               <Table>

@@ -43,6 +43,26 @@ function App() {
     toast({ title: "Sent to Generate", description: `${fieldName} value copied over.` });
   };
 
+  const handleContinueInGenerate = (copybookText: string, valuesByName: Record<string, string>) => {
+    setGenerateCopybook(copybookText);
+    let freshFields = generateFields;
+    try {
+      freshFields = parseCopybook(copybookText);
+    } catch (e) {
+      freshFields = [];
+    }
+    const newValues: Record<string, string> = {};
+    for (const f of freshFields) {
+      if (f.isGroup) continue;
+      if (Object.prototype.hasOwnProperty.call(valuesByName, f.name)) {
+        newValues[f.id] = valuesByName[f.name];
+      }
+    }
+    setGenerateValues(newValues);
+    setActiveTab("generate");
+    toast({ title: "Continuing in Generate", description: "The copybook and field values were carried over." });
+  };
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light">
@@ -78,6 +98,7 @@ function App() {
                     streamSource={decomposeStream}
                     setStreamSource={setDecomposeStream}
                     onSendToGenerate={handleSendToGenerate}
+                    onContinueInGenerate={handleContinueInGenerate}
                   />
                 </TabsContent>
               </Tabs>
