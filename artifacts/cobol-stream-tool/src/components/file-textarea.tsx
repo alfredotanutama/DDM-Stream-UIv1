@@ -18,12 +18,16 @@ export function FileTextarea({
   placeholder,
   label,
   showTypeLegend = false,
+  lengthBadge,
+  lengthBadgeVariant = "default",
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder: string;
   label: string;
   showTypeLegend?: boolean;
+  lengthBadge?: string;
+  lengthBadgeVariant?: "default" | "warning";
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -64,7 +68,21 @@ export function FileTextarea({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <Label className="text-sm font-medium">{label}</Label>
+        <div className="flex items-center gap-2">
+          <Label className="text-sm font-medium">{label}</Label>
+          {lengthBadge && (
+            <span
+              className={
+                "text-[11px] font-mono px-1.5 py-0.5 rounded " +
+                (lengthBadgeVariant === "warning"
+                  ? "bg-amber-500/15 text-amber-600 dark:text-amber-500"
+                  : "bg-muted text-muted-foreground")
+              }
+            >
+              {lengthBadge}
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"

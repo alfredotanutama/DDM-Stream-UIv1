@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { parseCopybook, generateStream } from "@/lib/cobol";
+import { parseCopybook, generateStream, getRecordLength } from "@/lib/cobol";
 import { FileTextarea } from "./file-textarea";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -29,6 +29,8 @@ export function GenerateTab() {
       return "";
     }
   }, [fields, values]);
+
+  const recordLength = useMemo(() => getRecordLength(fields), [fields]);
 
   const handleCopy = async () => {
     if (!stream) return;
@@ -61,6 +63,7 @@ export function GenerateTab() {
               value={copybookSource}
               onChange={setCopybookSource}
               showTypeLegend
+              lengthBadge={fields.length > 0 ? `Total: ${recordLength} bytes` : undefined}
             />
           </CardContent>
         </Card>

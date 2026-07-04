@@ -300,13 +300,18 @@ export function formatFieldValue(field: ParsedField, rawValue: string): string {
   return value.slice(0, field.length).padEnd(field.length, " ");
 }
 
+/** Total fixed-width byte length of the record described by a parsed copybook (REDEFINES overlaps don't add). */
+export function getRecordLength(fields: ParsedField[]): number {
+  return fields.reduce((max, f) => Math.max(max, f.start + f.length), 0);
+}
+
 /** Builds the full fixed-width stream from a set of user-entered field values. */
 export function generateStream(fields: ParsedField[], values: Record<string, string>): string {
   // Fields with indent > 0 (REDEFINES) occupy the same bytes as their target,
   // so only one "view" of each overlapping byte range should be written. We
   // write top-level (indent 0) fields first, then let REDEFINES fields overwrite
   // the same range only if the user actually typed a value for them.
-  const length = fields.reduce((max, f) => Math.max(max, f.start + f.length), 0);
+  const length = getRecordLength(fields);
   const chars: string[] = new Array(length).fill(" ");
 
   const writeField = (field: ParsedField) => {

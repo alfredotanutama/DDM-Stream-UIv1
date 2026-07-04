@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { parseCopybook, decomposeStream } from "@/lib/cobol";
+import { parseCopybook, decomposeStream, getRecordLength } from "@/lib/cobol";
 import { FileTextarea } from "./file-textarea";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -29,6 +29,9 @@ export function DecomposeTab() {
     }
   }, [fields, streamSource]);
 
+  const recordLength = useMemo(() => getRecordLength(fields), [fields]);
+  const lengthMismatch = fields.length > 0 && streamSource.length > 0 && streamSource.length !== recordLength;
+
   const handleCopyResult = async () => {
     if (!results.length) return;
     
@@ -54,6 +57,7 @@ export function DecomposeTab() {
               value={copybookSource}
               onChange={setCopybookSource}
               showTypeLegend
+              lengthBadge={fields.length > 0 ? `Total: ${recordLength} bytes` : undefined}
             />
           </CardContent>
         </Card>
@@ -64,7 +68,14 @@ export function DecomposeTab() {
               placeholder="Paste fixed-width stream data here..."
               value={streamSource}
               onChange={setStreamSource}
+              lengthBadge={streamSource.length > 0 ? `Length: ${streamSource.length} bytes` : undefined}
+              lengthBadgeVariant={lengthMismatch ? "warning" : "default"}
             />
+            {lengthMismatch && (
+              <p className="mt-1.5 text-[11px] text-amber-600 dark:text-amber-500">
+                Stream length ({streamSource.length}) doesn't match the copybook's expected length ({recordLength}).
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
